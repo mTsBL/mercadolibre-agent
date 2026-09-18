@@ -1,0 +1,9 @@
+.venv/
+.runtime/
+__pycache__/
+*.py[cod]
+.env
+findings.json
+dist/
+.coverage
+*.egg-info/

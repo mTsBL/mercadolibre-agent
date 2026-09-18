@@ -1,0 +1,382 @@
+{
+  "schema_version": "1.0",
+  "scanner": {
+    "name": "Local Agentic Security Scanner",
+    "version": "1.0.0"
+  },
+  "target": "http://127.0.0.1:42073",
+  "status": "completed",
+  "started_at": "2026-09-18T18:14:26Z",
+  "duration_seconds": 181.67,
+  "authentication": {
+    "status": "verified",
+    "attempts": 1,
+    "detail": "Session retrieves a resource denied to anonymous GET"
+  },
+  "summary": {
+    "findings": 4,
+    "endpoints_discovered": 8,
+    "requests_sent": 115,
+    "pages_visited": 4,
+    "blocked_browser_requests": 0
+  },
+  "ai": {
+    "provider": "local_ollama",
+    "model": "qwen2.5:7b",
+    "calls": 15,
+    "prompt_tokens": 8748,
+    "completion_tokens": 523,
+    "decisions": [
+      {
+        "action_id": "visit:a50aa46315feb5bb",
+        "reason": "Prioritize login page for authentication attempt."
+      },
+      {
+        "action_id": "login",
+        "reason": "Prioritize authentication"
+      },
+      {
+        "action_id": "visit:8abcd74dcf8bfe43",
+        "reason": "Explore unvisited page"
+      },
+      {
+        "action_id": "visit:3b12fa8d5bff5a89",
+        "reason": "Explore unvisited page"
+      },
+      {
+        "action_id": "visit:7306b1951b57cf9d",
+        "reason": "Unexplored page"
+      },
+      {
+        "action_id": "visit:a50aa46315feb5bb",
+        "reason": "Expanding exploration of unvisited pages."
+      },
+      {
+        "action_id": "visit:6f58405ec0be1fcb",
+        "reason": "Explore protected page after session established."
+      },
+      {
+        "action_id": "methods:4c74f8db9b05c0d4",
+        "reason": "Unexplored GET methods on the root URL."
+      },
+      {
+        "action_id": "visit:d2b20826bda9fe71",
+        "reason": "Explore unvisited page"
+      },
+      {
+        "action_id": "methods:7306b1951b57cf9d",
+        "reason": "Unexplored endpoint for method testing."
+      },
+      {
+        "action_id": "methods:8abcd74dcf8bfe43",
+        "reason": "Exploring untested endpoints for potential vulnerabilities."
+      },
+      {
+        "action_id": "methods:6f58405ec0be1fcb",
+        "reason": "Prioritize unexplored protected endpoints."
+      },
+      {
+        "action_id": "methods:d2b20826bda9fe71",
+        "reason": "Unexplored URL and method testing is prioritized."
+      },
+      {
+        "action_id": "methods:3b12fa8d5bff5a89",
+        "reason": "Unexplored GET method on an endpoint."
+      }
+    ]
+  },
+  "coverage": {
+    "scope": "Exact BASE_URL origin; loopback/private local network only",
+    "endpoints": [
+      {
+        "id": "4c74f8db9b05c0d4",
+        "url": "http://127.0.0.1:42073/",
+        "method": "GET",
+        "source": "base_url",
+        "observed": true,
+        "methods_tested": true
+      },
+      {
+        "id": "a50aa46315feb5bb",
+        "url": "http://127.0.0.1:42073/e4d136e1cd/enter",
+        "method": "GET",
+        "source": "html",
+        "observed": true,
+        "methods_tested": false
+      },
+      {
+        "id": "7306b1951b57cf9d",
+        "url": "http://127.0.0.1:42073/e4d136e1cd/public",
+        "method": "GET",
+        "source": "html",
+        "observed": true,
+        "methods_tested": true
+      },
+      {
+        "id": "d2b20826bda9fe71",
+        "url": "http://127.0.0.1:42073/e4d136e1cd/wildcard",
+        "method": "GET",
+        "source": "html",
+        "observed": true,
+        "methods_tested": true
+      },
+      {
+        "id": "8abcd74dcf8bfe43",
+        "url": "http://127.0.0.1:42073/e4d136e1cd/strict",
+        "method": "GET",
+        "source": "html",
+        "observed": true,
+        "methods_tested": true
+      },
+      {
+        "id": "3b12fa8d5bff5a89",
+        "url": "http://127.0.0.1:42073/e4d136e1cd/contract",
+        "method": "GET",
+        "source": "html",
+        "observed": true,
+        "methods_tested": true
+      },
+      {
+        "id": "bfb7b73ff559aa6a",
+        "url": "http://127.0.0.1:42073/e4d136e1cd/session",
+        "method": "POST",
+        "source": "form",
+        "observed": true,
+        "methods_tested": false
+      },
+      {
+        "id": "6f58405ec0be1fcb",
+        "url": "http://127.0.0.1:42073/e4d136e1cd/protected",
+        "method": "GET",
+        "source": "html",
+        "observed": true,
+        "methods_tested": true
+      }
+    ],
+    "method_observations": [
+      {
+        "url": "http://127.0.0.1:42073/",
+        "reason": "No reproducible authorization bypass or declared-method violation confirmed"
+      },
+      {
+        "url": "http://127.0.0.1:42073/e4d136e1cd/public",
+        "reason": "No reproducible authorization bypass or declared-method violation confirmed"
+      },
+      {
+        "url": "http://127.0.0.1:42073/e4d136e1cd/strict",
+        "reason": "No reproducible authorization bypass or declared-method violation confirmed"
+      },
+      {
+        "url": "http://127.0.0.1:42073/e4d136e1cd/wildcard",
+        "reason": "No reproducible authorization bypass or declared-method violation confirmed"
+      }
+    ],
+    "limitations": [
+      "Bounded exploration cannot prove absence of vulnerabilities.",
+      "No CAPTCHA/MFA bypass, external identity provider, arbitrary workflow or path-parameter guessing.",
+      "WebSockets, service workers, images, media, fonts and cross-origin resources are blocked.",
+      "CPF detection establishes unmasked identifier exposure, not business necessity or authorization.",
+      "Method results require exact stable response evidence; dynamic or body-dependent handlers may be missed."
+    ]
+  },
+  "errors": [],
+  "warnings": [],
+  "findings": [
+    {
+      "id": "cpf:00be36c16c58d137",
+      "type": "sensitive_data_exposure",
+      "severity": "high",
+      "confidence": "high",
+      "url": "http://127.0.0.1:42073/e4d136e1cd/public",
+      "method": "GET",
+      "title": "Unmasked Brazilian CPF in HTTP response",
+      "cwe": "CWE-359",
+      "description": "Checksum-valid CPF identifiers appear in a CPF/document-labelled response context.",
+      "why_it_matters": "Unmasked personal identifiers increase privacy and identity-fraud risk. This response was obtained without scanner-supplied authentication.",
+      "evidence": {
+        "response": {
+          "method": "GET",
+          "status": 200,
+          "content_type": "application/json",
+          "bytes": 25,
+          "body_sha256": "9f6d9e70a80b6f201dbee3e7645a04da0e599b0e744924cd24152cc55f870c54",
+          "session": "anonymous",
+          "truncated": false
+        },
+        "cpf_count": 1,
+        "value": "[CPF REDACTED]",
+        "validation": "both CPF check digits and contextual label",
+        "access_context": "anonymous",
+        "authorization_assessed": false
+      },
+      "remediation": "Minimize returned personal data; mask CPF where a full identifier is unnecessary and enforce access controls."
+    },
+    {
+      "id": "cpf:846457f2a2f1cf8e",
+      "type": "sensitive_data_exposure",
+      "severity": "high",
+      "confidence": "high",
+      "url": "http://127.0.0.1:42073/e4d136e1cd/protected",
+      "method": "POST",
+      "title": "Unmasked Brazilian CPF in HTTP response",
+      "cwe": "CWE-359",
+      "description": "Checksum-valid CPF identifiers appear in a CPF/document-labelled response context.",
+      "why_it_matters": "Unmasked personal identifiers increase privacy and identity-fraud risk. This response was obtained without scanner-supplied authentication.",
+      "evidence": {
+        "response": {
+          "method": "POST",
+          "status": 200,
+          "content_type": "application/json",
+          "bytes": 40,
+          "body_sha256": "9972d98955fd1741b5e7d5c0705f71d587e236e64c647abb27b83c1610dfd9b6",
+          "session": "anonymous",
+          "truncated": false
+        },
+        "cpf_count": 1,
+        "value": "[CPF REDACTED]",
+        "validation": "both CPF check digits and contextual label",
+        "access_context": "anonymous",
+        "authorization_assessed": false
+      },
+      "remediation": "Minimize returned personal data; mask CPF where a full identifier is unnecessary and enforce access controls."
+    },
+    {
+      "id": "method:06c2d3058944956b",
+      "type": "http_method_tampering",
+      "severity": "high",
+      "confidence": "high",
+      "url": "http://127.0.0.1:42073/e4d136e1cd/protected",
+      "method": "POST",
+      "title": "HTTP method changes bypass authorization",
+      "cwe": "CWE-863",
+      "description": "A repeatable alternate-method response passes the evidence gates and differs from the unknown-method control.",
+      "why_it_matters": "An anonymous alternate method exposes protected response data.",
+      "evidence": {
+        "mode": "authorization_bypass",
+        "baseline": {
+          "method": "GET",
+          "status": 401,
+          "content_type": "application/json",
+          "bytes": 35,
+          "body_sha256": "261f7d57777ec45a642c4a33f29a3cfd3ece2a6c4f69ef874227bcde82e5c53c",
+          "session": "anonymous",
+          "truncated": false
+        },
+        "alternate": {
+          "method": "POST",
+          "status": 200,
+          "content_type": "application/json",
+          "bytes": 40,
+          "body_sha256": "9972d98955fd1741b5e7d5c0705f71d587e236e64c647abb27b83c1610dfd9b6",
+          "session": "anonymous",
+          "truncated": false
+        },
+        "confirmation": {
+          "method": "POST",
+          "status": 200,
+          "content_type": "application/json",
+          "bytes": 40,
+          "body_sha256": "9972d98955fd1741b5e7d5c0705f71d587e236e64c647abb27b83c1610dfd9b6",
+          "session": "anonymous",
+          "truncated": false
+        },
+        "unknown_method_control": {
+          "method": "SCANNERPROBE",
+          "status": 405,
+          "content_type": "text/html",
+          "bytes": 11,
+          "body_sha256": "54324658e2eba91c826cb01a802414559c8b8b713b28b4df68cd5075611cf1b5",
+          "session": "anonymous",
+          "truncated": false
+        },
+        "confirmed_methods": [
+          "POST"
+        ],
+        "declared_methods": [
+          "GET",
+          "HEAD",
+          "OPTIONS"
+        ],
+        "authenticated_reference": {
+          "method": "GET",
+          "status": 200,
+          "content_type": "application/json",
+          "bytes": 40,
+          "body_sha256": "9972d98955fd1741b5e7d5c0705f71d587e236e64c647abb27b83c1610dfd9b6",
+          "session": "authenticated",
+          "truncated": false
+        }
+      },
+      "remediation": "Apply authentication and authorization to every method; reject unsupported methods before executing handlers."
+    },
+    {
+      "id": "method:9f9df03c2fba2251",
+      "type": "http_method_tampering",
+      "severity": "medium",
+      "confidence": "high",
+      "url": "http://127.0.0.1:42073/e4d136e1cd/contract",
+      "method": "DELETE",
+      "title": "Endpoint violates its discovered method contract",
+      "cwe": "CWE-650",
+      "description": "A repeatable alternate-method response passes the evidence gates and differs from the unknown-method control.",
+      "why_it_matters": "An undeclared method returns the same application data despite an explicit discovered method contract.",
+      "evidence": {
+        "mode": "declared_method_violation",
+        "baseline": {
+          "method": "GET",
+          "status": 200,
+          "content_type": "application/json",
+          "bytes": 41,
+          "body_sha256": "3c53e88a3c521b1167f791c518036e201c43fed2dab1fbc6ebe559f47a4d43b7",
+          "session": "anonymous",
+          "truncated": false
+        },
+        "alternate": {
+          "method": "DELETE",
+          "status": 200,
+          "content_type": "application/json",
+          "bytes": 41,
+          "body_sha256": "3c53e88a3c521b1167f791c518036e201c43fed2dab1fbc6ebe559f47a4d43b7",
+          "session": "anonymous",
+          "truncated": false
+        },
+        "confirmation": {
+          "method": "DELETE",
+          "status": 200,
+          "content_type": "application/json",
+          "bytes": 41,
+          "body_sha256": "3c53e88a3c521b1167f791c518036e201c43fed2dab1fbc6ebe559f47a4d43b7",
+          "session": "anonymous",
+          "truncated": false
+        },
+        "unknown_method_control": {
+          "method": "SCANNERPROBE",
+          "status": 405,
+          "content_type": "text/html",
+          "bytes": 11,
+          "body_sha256": "54324658e2eba91c826cb01a802414559c8b8b713b28b4df68cd5075611cf1b5",
+          "session": "anonymous",
+          "truncated": false
+        },
+        "confirmed_methods": [
+          "DELETE"
+        ],
+        "declared_methods": [
+          "GET",
+          "HEAD",
+          "OPTIONS"
+        ],
+        "authenticated_reference": {
+          "method": "GET",
+          "status": 200,
+          "content_type": "application/json",
+          "bytes": 41,
+          "body_sha256": "3c53e88a3c521b1167f791c518036e201c43fed2dab1fbc6ebe559f47a4d43b7",
+          "session": "authenticated",
+          "truncated": false
+        }
+      },
+      "remediation": "Apply authentication and authorization to every method; reject unsupported methods before executing handlers."
+    }
+  ]
+}
