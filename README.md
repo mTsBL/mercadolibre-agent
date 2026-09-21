@@ -56,3 +56,42 @@ O `findings.json` é escrito **no diretório de onde o comando foi executado** (
 | `MAX_REQUESTS` | `1500` | Limite global de requisições ao alvo |
 
 Demais limites (`MAX_PAGES`, `MAX_ENDPOINTS`, `MAX_LLM_CALLS`, `MAX_LLM_TOKENS`, `REQUEST_TIMEOUT`, `OLLAMA_TIMEOUT`, `MAX_BODY_BYTES`, `BROWSER_SETTLE_MS`) têm padrões seguros e raramente precisam de ajuste.
+
+## Arquitetura
+
+```mermaid
+flowchart TD
+    A[BASE_URL + limites] --> B[Validação de escopo + Ollama pronto]
+    B --> C[Chromium: navega, executa JS,<br/>descobre DOM e formulários]
+    C --> D[Inventário de endpoints]
+    D --> E[Planner local Ollama<br/>escolhe a próxima ação em JSON]
+    E -->|navegar| C
+    E -->|autenticar| F[Login: o modelo identifica os campos,<br/>o navegador preenche e envia]
+    F --> C
+    E -->|superfície esgotada| G[Fase 2: teste de métodos determinístico<br/>em todo endpoint + prova de mudança de estado]
+    C --> H[Detector de CPF<br/>checksum + contexto]
+    G --> I[Detector de method tampering<br/>bypass de autorização / método inseguro / contrato]
+    H --> J[(findings.json)]
+    I --> J
+```
+
+O modelo local é o **planner**: a cada passo ele escolhe a próxima ação (navegar ou autenticar) a partir de IDs válidos, em JSON estruturado, e identifica os campos de login pelos metadados do formulário. O modelo **não inventa** vulnerabilidades — todo achado vem de detectores determinísticos com evidência reproduzível (checksum de CPF, comparação exata de respostas, mudança de estado observada). A exploração é guiada por IA, onde julgamento ajuda; a evidência é mecânica, para não haver falso positivo alucinado. O teste de métodos (Fase 2) roda sem o modelo, por velocidade e reprodutibilidade.
+
+HTML, links e labels são tratados como dados não confiáveis: nunca viram instruções para o modelo. Cookies e tokens de autenticação são reutilizados apenas na mesma origem; as sondagens anônimas usam um contexto sem eles. As credenciais nunca chegam ao modelo nem ao relatório.
+
+### Módulos
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `scanner/__main__.py` | Ponto de entrada (`python -m scanner`): monta tudo, roda o agente, grava `findings.json` e define o código de saída |
+| `scanner/agent.py` | Orquestrador: Fase 1 (loop guiado pelo modelo) e Fase 2 (teste determinístico de métodos e mudança de estado) |
+| `scanner/llm.py` | Cliente Ollama: `preflight`, `choose` (próxima ação) e `login_fields`; schema JSON, temperatura 0, orçamentos |
+| `scanner/browser.py` | Chromium/Playwright: navegação, execução de JS, descoberta de DOM/formulários e login |
+| `scanner/discovery.py` | Inventário de endpoints (HTML, JSON, JS, OpenAPI) e registro de formulários |
+| `scanner/detectors.py` | Detectores determinísticos: CPF e method tampering (bypass, método inseguro/CSRF, violação de contrato) |
+| `scanner/transport.py` | HTTP controlado: IPs locais fixados, sem proxy, redirects explícitos, orçamentos, limite de corpo |
+| `scanner/safety.py` | Validação de escopo (loopback/rede privada), canonicalização de URL e redação de credenciais/CPF |
+| `scanner/service.py` | Ciclo de vida do Ollama local (sobe/reutiliza e encerra só o processo próprio) |
+| `scanner/config.py` | Leitura e validação das variáveis de ambiente |
+| `scanner/ui.py` | Saída estilizada do terminal |
+| `schemas/findings.schema.json` | Contrato do relatório de saída |
