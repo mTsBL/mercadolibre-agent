@@ -52,8 +52,14 @@ class Discovery:
         self.scope, self.limit = scope, limit
         self.endpoints: dict[str, Endpoint] = {}
         self.responses: dict[tuple[str, str, str], Response] = {}
+        self.forms: dict[str, dict] = {}
         self.limited = False
         self.blocked = 0
+
+    def record_form(self, action: str, method: str, hidden: dict, visible: int, page: str):
+        # A discovered write form: its action, the hidden fields needed to submit it legitimately
+        # (CSRF token included), how many visible inputs it has, and the page it was found on.
+        self.forms[action] = {"method": method, "hidden": hidden, "visible": visible, "page": page}
 
     def add(self, value: str, base="", method="GET", source="observed", depth=0):
         if not isinstance(value, str) or len(value) > 2048 or depth > 8:

@@ -69,8 +69,8 @@ ThreadingHTTPServer((host, int(port)), fake_ollama()[0]).serve_forever()
             env, marker = self.environment(directory)
             result, report = self.execute(directory, env)
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(report["status"], "completed")
-            self.assertGreater(report["ai"]["calls"], 0)
+            self.assertEqual(report, {"findings": []})
+            self.assertIn("Scan concluído", result.stderr)
             self.assert_stopped(marker)
 
     def test_existing_server_is_reused_and_left_running(self):
@@ -91,8 +91,8 @@ ThreadingHTTPServer((host, int(port)), fake_ollama()[0]).serve_forever()
             env, marker = self.environment(directory, "exit")
             result, report = self.execute(directory, env)
             self.assertEqual(result.returncode, 1)
-            self.assertEqual(report["status"], "failed")
-            self.assertIn("exit code 7", report["errors"][0])
+            self.assertEqual(report, {"findings": []})
+            self.assertIn("exit code 7", result.stderr)
             self.assert_stopped(marker)
 
     def test_startup_timeout_stops_child_and_preserves_report(self):
@@ -101,7 +101,7 @@ ThreadingHTTPServer((host, int(port)), fake_ollama()[0]).serve_forever()
             env["OLLAMA_START_TIMEOUT"] = "1"
             result, report = self.execute(directory, env)
             self.assertEqual(result.returncode, 1)
-            self.assertIn("did not become ready", report["errors"][0])
+            self.assertIn("did not become ready", result.stderr)
             self.assert_stopped(marker)
 
     def test_interruption_stops_owned_server(self):
@@ -120,7 +120,7 @@ ThreadingHTTPServer((host, int(port)), fake_ollama()[0]).serve_forever()
                 self.assertEqual(process.returncode, 130)
                 report = json.loads((Path(directory) / "findings.json").read_text())
                 validate_report(report)
-                self.assertEqual(report["status"], "partial")
+                self.assertEqual(report, {"findings": []})
                 self.assert_stopped(marker)
             finally:
                 if process.poll() is None:

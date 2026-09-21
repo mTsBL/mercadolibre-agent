@@ -12,6 +12,7 @@ import tempfile
 import time
 from urllib.parse import urlsplit
 
+from . import ui
 from .config import integer
 from .safety import Scope
 from .transport import Budget, Transport
@@ -42,7 +43,7 @@ class OllamaService:
             return True
 
         if ready():
-            print("Reusing the running local Ollama service.", file=sys.stderr)
+            ui.step("Modelo local (Ollama) já disponível.")
             return
         if urlsplit(scope.base).scheme != "http" or not all(ipaddress.ip_address(ip).is_loopback for ip in scope.addresses):
             raise RuntimeError("Ollama is unavailable; automatic startup requires a loopback HTTP OLLAMA_BASE_URL")
@@ -64,7 +65,7 @@ class OllamaService:
         if Path(executable).resolve() == portable.resolve():
             env.setdefault("OLLAMA_MODELS", str(root / ".runtime" / "models"))
         self.log = tempfile.TemporaryFile()
-        print("Starting local Ollama and waiting for readiness...", file=sys.stderr)
+        ui.step("Iniciando o modelo local (Ollama) e aguardando ficar pronto…")
         self.process = subprocess.Popen([executable, "serve"], env=env, stdin=subprocess.DEVNULL,
                                         stdout=self.log, stderr=self.log, start_new_session=True)
         deadline = time.monotonic() + timeout

@@ -29,10 +29,10 @@ class RealOllamaTests(unittest.TestCase):
                 directory = Path(".runtime")
                 directory.mkdir(exist_ok=True)
                 (directory / "real-ollama-report.json").write_text(json.dumps(report, indent=2))
-                self.assertEqual(report["status"], "completed", report["warnings"])
-                self.assertEqual(report["authentication"]["status"], "verified")
+                self.assertEqual(agent.status, "completed", agent.warnings)
+                self.assertEqual(agent.auth["status"], "verified")
                 self.assertEqual({f["type"] for f in report["findings"]}, {"sensitive_data_exposure", "http_method_tampering"})
-                self.assertGreater(report["ai"]["prompt_tokens"], 0)
+                self.assertGreater(agent.model.prompt_tokens, 0)
             finally:
                 agent.close()
 

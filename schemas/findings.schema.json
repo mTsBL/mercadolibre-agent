@@ -1,49 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:local-agentic-scanner:findings:1.0",
-  "title": "Local Agentic Security Scanner report",
+  "$id": "urn:local-agentic-scanner:findings:2.0",
+  "title": "Security findings",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "scanner", "target", "status", "started_at", "duration_seconds", "authentication", "summary", "ai", "coverage", "errors", "warnings", "findings"],
+  "required": ["findings"],
   "properties": {
-    "schema_version": {"const": "1.0"},
-    "scanner": {"type": "object", "required": ["name", "version"], "properties": {"name": {"type": "string"}, "version": {"type": "string"}}, "additionalProperties": false},
-    "target": {"type": "string"},
-    "status": {"enum": ["completed", "partial", "failed"]},
-    "started_at": {"type": "string", "format": "date-time"},
-    "duration_seconds": {"type": "number", "minimum": 0},
-    "authentication": {
-      "type": "object", "required": ["status", "attempts", "detail"], "additionalProperties": false,
-      "properties": {
-        "status": {"enum": ["not_attempted", "not_required", "not_discovered", "credentials_missing", "session_established", "verified", "failed"]},
-        "attempts": {"type": "integer", "minimum": 0, "maximum": 2}, "detail": {"type": "string"}
-      }
-    },
-    "summary": {
-      "type": "object", "required": ["findings", "endpoints_discovered", "requests_sent", "pages_visited", "blocked_browser_requests"],
-      "additionalProperties": {"type": "integer", "minimum": 0}
-    },
-    "ai": {
-      "type": "object", "required": ["provider", "model", "calls", "prompt_tokens", "completion_tokens", "decisions"], "additionalProperties": false,
-      "properties": {
-        "provider": {"const": "local_ollama"}, "model": {"type": "string"},
-        "calls": {"type": "integer", "minimum": 0}, "prompt_tokens": {"type": "integer", "minimum": 0}, "completion_tokens": {"type": "integer", "minimum": 0},
-        "decisions": {"type": "array", "items": {"type": "object", "required": ["action_id", "reason"], "properties": {"action_id": {"type": "string"}, "reason": {"type": "string"}}, "additionalProperties": false}}
-      }
-    },
-    "coverage": {
-      "type": "object", "required": ["scope", "endpoints", "method_observations", "limitations"], "additionalProperties": false,
-      "properties": {
-        "scope": {"type": "string"},
-        "endpoints": {"type": "array", "items": {
-          "type": "object", "required": ["id", "url", "method", "source", "observed", "methods_tested"], "additionalProperties": false,
-          "properties": {"id": {"type": "string"}, "url": {"type": "string"}, "method": {"type": "string"}, "source": {"type": "string"}, "observed": {"type": "boolean"}, "methods_tested": {"type": "boolean"}}
-        }},
-        "method_observations": {"type": "array", "items": {"type": "object", "required": ["url", "reason"], "properties": {"url": {"type": "string"}, "reason": {"type": "string"}}, "additionalProperties": false}},
-        "limitations": {"$ref": "#/$defs/strings"}
-      }
-    },
-    "errors": {"$ref": "#/$defs/strings"}, "warnings": {"$ref": "#/$defs/strings"},
     "findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}}
   },
   "$defs": {
@@ -68,11 +30,11 @@
       "allOf": [
         {"if": {"properties": {"type": {"const": "sensitive_data_exposure"}}}, "then": {"properties": {"evidence": {
           "type": "object", "required": ["response", "cpf_count", "value", "validation", "access_context", "authorization_assessed"], "additionalProperties": false,
-          "properties": {"response": {"$ref": "#/$defs/response"}, "cpf_count": {"type": "integer", "minimum": 1}, "value": {"const": "[CPF REDACTED]"}, "validation": {"type": "string"}, "access_context": {"enum": ["anonymous", "authenticated"]}, "authorization_assessed": {"const": false}}
+          "properties": {"response": {"$ref": "#/$defs/response"}, "cpf_count": {"type": "integer", "minimum": 1}, "value": {"const": "[CPF REDACTED]"}, "validation": {"type": "string"}, "access_context": {"enum": ["anonymous", "authenticated"]}, "authorization_assessed": {"type": "boolean"}, "related_findings": {"$ref": "#/$defs/strings"}}
         }}}},
         {"if": {"properties": {"type": {"const": "http_method_tampering"}}}, "then": {"properties": {"evidence": {
           "type": "object", "required": ["mode", "baseline", "alternate", "confirmation", "unknown_method_control", "confirmed_methods", "declared_methods"], "additionalProperties": false,
-          "properties": {"mode": {"enum": ["authorization_bypass", "declared_method_violation"]}, "baseline": {"$ref": "#/$defs/response"}, "alternate": {"$ref": "#/$defs/response"}, "confirmation": {"$ref": "#/$defs/response"}, "unknown_method_control": {"$ref": "#/$defs/response"}, "authenticated_reference": {"$ref": "#/$defs/response"}, "confirmed_methods": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["POST", "PUT", "PATCH", "DELETE", "HEAD"]}}, "declared_methods": {"$ref": "#/$defs/strings"}}
+          "properties": {"mode": {"enum": ["authorization_bypass", "unsafe_method_state_change", "declared_method_violation"]}, "baseline": {"$ref": "#/$defs/response"}, "alternate": {"$ref": "#/$defs/response"}, "confirmation": {"$ref": "#/$defs/response"}, "unknown_method_control": {"$ref": "#/$defs/response"}, "authenticated_reference": {"$ref": "#/$defs/response"}, "legitimate_method": {"$ref": "#/$defs/response"}, "state_before": {"$ref": "#/$defs/response"}, "state_after": {"$ref": "#/$defs/response"}, "confirmed_methods": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"]}}, "declared_methods": {"$ref": "#/$defs/strings"}}
         }}}}
       ]
     }

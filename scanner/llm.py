@@ -47,12 +47,12 @@ class Ollama:
     def ask(self, task, schema):
         self.budget.check()
         if self.calls >= self.config.max_llm_calls:
-            raise BudgetExceeded("Ollama call budget exhausted")
+            raise BudgetExceeded("Limite de chamadas ao modelo local esgotado.")
         # Reserve enough tokens for this bounded prompt plus completion BEFORE making the call.
         content = json.dumps(self.redactor.clean(task), ensure_ascii=False)
         estimate = len((SYSTEM + content).encode("utf-8")) + 384
         if self.prompt_tokens + self.completion_tokens + estimate > self.config.max_tokens:
-            raise BudgetExceeded("Ollama token budget exhausted")
+            raise BudgetExceeded("Limite de tokens do modelo local esgotado.")
         self.calls += 1
         self.transport.timeout = min(self.config.llm_timeout, self.budget.remaining_seconds())
         payload = {"model": self.config.model, "stream": False, "format": schema,

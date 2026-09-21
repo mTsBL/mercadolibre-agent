@@ -31,12 +31,12 @@ class Budget:
 
     def check(self):
         if time.monotonic() - self.started >= self.max_seconds:
-            raise BudgetExceeded("Time budget exhausted")
+            raise BudgetExceeded("Tempo máximo do scan esgotado.")
 
     def take(self):
         self.check()
         if self.requests >= self.max_requests:
-            raise BudgetExceeded("HTTP request budget exhausted")
+            raise BudgetExceeded("Limite de requisições HTTP ao alvo esgotado.")
         self.requests += 1
 
     def remaining_seconds(self):

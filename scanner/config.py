@@ -18,7 +18,7 @@ class Config:
     ollama_url: str = "http://127.0.0.1:11434"
     model: str = "qwen2.5:7b"
     output: Path = field(default_factory=lambda: Path("findings.json"))
-    max_requests: int = 240
+    max_requests: int = 1500  # Every endpoint is method-swept under each session; localhost requests are cheap.
     max_pages: int = 30
     max_endpoints: int = 80
     max_llm_calls: int = 30
@@ -42,7 +42,7 @@ class Config:
             ollama_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
             model=os.getenv("OLLAMA_MODEL", "qwen2.5:7b"),
             output=Path(os.getenv("OUTPUT_FILE", "findings.json")),
-            max_requests=integer("MAX_REQUESTS", 240), max_pages=integer("MAX_PAGES", 30),
+            max_requests=integer("MAX_REQUESTS", 1500), max_pages=integer("MAX_PAGES", 30),
             max_endpoints=integer("MAX_ENDPOINTS", 80), max_llm_calls=integer("MAX_LLM_CALLS", 30),
             max_tokens=integer("MAX_LLM_TOKENS", 60_000, maximum=1_000_000),
             max_seconds=integer("MAX_SECONDS", 900, maximum=86_400),

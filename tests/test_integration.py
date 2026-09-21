@@ -31,6 +31,7 @@ class BrowserIntegrationTests(unittest.TestCase):
             config = Config(base_url=base, ollama_url=ollama, username=USERNAME, password=password,
                             settle_ms=50, max_llm_calls=80, max_tokens=200_000, max_requests=400)
             agent = Agent(config, Redactor(USERNAME, password))
+            self.agent = agent
             try:
                 agent.run()
                 report = agent.report()
@@ -41,8 +42,8 @@ class BrowserIntegrationTests(unittest.TestCase):
 
     def test_cookie_login_and_both_detectors(self):
         report, prefix, seen, prompts = self.run_agent()
-        self.assertEqual(report["status"], "completed", report)
-        self.assertEqual(report["authentication"]["status"], "verified", report["authentication"])
+        self.assertEqual(self.agent.status, "completed", report)
+        self.assertEqual(self.agent.auth["status"], "verified", self.agent.auth)
         types = {f["type"] for f in report["findings"]}
         self.assertEqual(types, {"sensitive_data_exposure", "http_method_tampering"})
         method_findings = [f for f in report["findings"] if f["type"] == "http_method_tampering"]
@@ -53,30 +54,30 @@ class BrowserIntegrationTests(unittest.TestCase):
             self.assertNotIn(value, json.dumps(prompts))
         # No scanner-specific route knowledge: each fixture run has a random prefix.
         self.assertTrue(any(path == prefix + "/protected" for _, path in seen))
-        self.assertGreater(report["ai"]["calls"], 0)
+        self.assertGreater(self.agent.model.calls, 0)
 
     def test_javascript_token_login(self):
         report, _, _, prompts = self.run_agent(mode="spa")
-        self.assertEqual(report["status"], "completed", report)
-        self.assertEqual(report["authentication"]["status"], "verified", report["authentication"])
+        self.assertEqual(self.agent.status, "completed", report)
+        self.assertEqual(self.agent.auth["status"], "verified", self.agent.auth)
         self.assertTrue(any(f["evidence"].get("mode") == "authorization_bypass" for f in report["findings"]))
         self.assertNotIn(SESSION, json.dumps(prompts))
 
     def test_localhost_cookie_domains_and_ipv6_fallback(self):
         report, _, _, _ = self.run_agent(localhost=True)
-        self.assertEqual(report["status"], "completed", report["warnings"])
-        self.assertEqual(report["authentication"]["status"], "verified")
+        self.assertEqual(self.agent.status, "completed", self.agent.warnings)
+        self.assertEqual(self.agent.auth["status"], "verified")
 
     def test_safe_application_produces_empty_findings(self):
         report, _, _, _ = self.run_agent(safe=True)
-        self.assertEqual(report["status"], "completed", report)
+        self.assertEqual(self.agent.status, "completed", report)
         self.assertEqual(report["findings"], [])
 
     def test_wrong_password_never_reports_successful_login(self):
         report, _, _, _ = self.run_agent(password="wrong-password")
-        self.assertEqual(report["status"], "partial", report)
-        self.assertEqual(report["authentication"]["status"], "failed")
-        self.assertEqual(report["authentication"]["attempts"], 1)
+        self.assertEqual(self.agent.status, "partial", report)
+        self.assertEqual(self.agent.auth["status"], "failed")
+        self.assertEqual(self.agent.auth["attempts"], 1)
 
     def test_browser_never_contacts_external_origin(self):
         external_seen = []
@@ -110,23 +111,25 @@ class CLITests(unittest.TestCase):
             result = subprocess.run([str(ROOT / "run.sh")], cwd=directory, env=env, capture_output=True, text=True, timeout=30)
             report = json.loads((Path(directory) / "findings.json").read_text())
             validate_report(report)
+            self.assertEqual(set(report), {"findings"})
+            self.assertEqual({p.name for p in Path(directory).iterdir()}, {"findings.json"})
             return result, report
 
     def test_missing_configuration_still_produces_json(self):
         result, report = self.run_cli()
         self.assertEqual(result.returncode, 1)
-        self.assertEqual(report["status"], "failed")
+        self.assertIn("Scan falhou", result.stderr)
         self.assertEqual(report["findings"], [])
 
     def test_public_target_is_rejected(self):
         result, report = self.run_cli(BASE_URL="http://8.8.8.8")
         self.assertEqual(result.returncode, 1)
-        self.assertEqual(report["summary"]["requests_sent"], 0)
+        self.assertEqual(report, {"findings": []})
 
     def test_malformed_target_still_writes_report(self):
         result, report = self.run_cli(BASE_URL="http://[invalid")
         self.assertEqual(result.returncode, 1)
-        self.assertEqual(report["status"], "failed")
+        self.assertIn("Scan falhou", result.stderr)
 
     def test_url_credentials_are_rejected_and_not_written(self):
         result, report = self.run_cli(BASE_URL="http://embedded-user:embedded-password@localhost:3000")
@@ -141,7 +144,7 @@ class CLITests(unittest.TestCase):
         with serving(app) as base:
             result, report = self.run_cli(BASE_URL=base, OLLAMA_BASE_URL=ollama, OLLAMA_BIN="/nonexistent/ollama")
         self.assertEqual(result.returncode, 1)
-        self.assertEqual(report["summary"]["requests_sent"], 0)
+        self.assertEqual(report, {"findings": []})
         self.assertEqual(seen, [])
 
     def test_invalid_model_response_writes_failure_report(self):
@@ -150,8 +153,8 @@ class CLITests(unittest.TestCase):
         with serving(app) as base, serving(model) as ollama:
             result, report = self.run_cli(BASE_URL=base, OLLAMA_BASE_URL=ollama, BROWSER_SETTLE_MS="0")
         self.assertEqual(result.returncode, 1, result.stderr)
-        self.assertEqual(report["status"], "failed")
-        self.assertTrue(report["errors"])
+        self.assertIn("Scan falhou", result.stderr)
+        self.assertIn("ModelError", result.stderr)
 
     def test_request_budget_produces_partial_report(self):
         app, _, _ = application()
@@ -159,8 +162,17 @@ class CLITests(unittest.TestCase):
         with serving(app) as base, serving(model) as ollama:
             result, report = self.run_cli(BASE_URL=base, OLLAMA_BASE_URL=ollama, MAX_REQUESTS="1", BROWSER_SETTLE_MS="0")
         self.assertEqual(result.returncode, 2, result.stderr)
-        self.assertEqual(report["status"], "partial")
-        self.assertLessEqual(report["summary"]["requests_sent"], 1)
+        self.assertIn("parcial", result.stderr)
+        self.assertIn("requisições HTTP ao alvo esgotado", result.stderr)
+
+    def test_missing_login_credentials_are_explained_only_in_terminal(self):
+        app, _, _ = application(safe=True)
+        model, _ = fake_ollama()
+        with serving(app) as base, serving(model) as ollama:
+            result, report = self.run_cli(BASE_URL=base, OLLAMA_BASE_URL=ollama, BROWSER_SETTLE_MS="0")
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("CHALLENGE_USERNAME e CHALLENGE_PASSWORD não foram encontradas", result.stderr)
+        self.assertEqual(report, {"findings": []})
 
 
 if __name__ == "__main__":

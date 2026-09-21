@@ -5,6 +5,7 @@ import signal
 import sys
 import tempfile
 
+from . import ui
 from .agent import Agent
 from .config import Config
 from .safety import Redactor
@@ -42,6 +43,7 @@ def main():
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGTERM, interrupted)
+    ui.header(redactor.url(os.getenv("BASE_URL", "").strip()) or "(BASE_URL não definido)")
     try:
         config = Config.from_env()
         agent = Agent(config, redactor)
@@ -49,7 +51,7 @@ def main():
             Scope(config.base_url)  # Reject invalid/external targets before starting a process.
             service = OllamaService(config)
             service.ensure_ready()
-        print("Starting local agent; results will be written to findings.json.", file=sys.stderr)
+        ui.step("Executando o scan (exploração, login e testes de método)…")
         agent.run()
         exit_code = 0 if agent.status == "completed" else 2
     except BudgetExceeded as exc:
@@ -60,11 +62,11 @@ def main():
     except KeyboardInterrupt:
         if agent:
             agent.status = "partial"
-            agent.warnings.append("Scan interrupted")
+            agent.warnings.append("Scan interrompido")
         exit_code = 130
     except Exception as exc:
         message = redactor.text(f"{type(exc).__name__}: {exc}")
-        print(message, file=sys.stderr)
+        ui.fail(message)
         if agent:
             agent.status = "failed"
             agent.errors.append(message)
@@ -87,9 +89,10 @@ def main():
             report = agent.report()
             try:
                 write_report(output, report)
-                print(f"Scan {report['status']}: {len(report['findings'])} finding(s).", file=sys.stderr)
+                warnings = [redactor.text(w) for w in dict.fromkeys(agent.warnings)]
+                ui.summary(agent.status, report["findings"], str(Path(output).resolve()), warnings)
             except OSError as exc:
-                print(f"Cannot write report: {redactor.text(str(exc))}", file=sys.stderr)
+                ui.fail(f"Não foi possível gravar o relatório: {redactor.text(str(exc))}")
                 exit_code = 1
     return exit_code
 

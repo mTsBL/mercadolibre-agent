@@ -155,6 +155,34 @@ class Browser:
         )
         for link in links:
             self.discovery.add(link, self.page.url, source="rendered_dom", depth=self.depth + 1)
+        self.capture_forms()
+
+    def capture_forms(self):
+        # Capture write forms so method testing can submit the intended method WITH its CSRF
+        # token, and tell an authorization bypass apart from a plain unsafe-method/CSRF flaw.
+        from playwright.sync_api import Error
+        try:
+            forms = self.page.locator("form").evaluate_all("""els => els.slice(0, 30).map(f => ({
+                action: f.action || location.href,
+                method: (f.getAttribute('method') || 'GET').toUpperCase(),
+                hidden: [...f.querySelectorAll('input')].filter(e => e.name && e.type === 'hidden').map(e => [e.name, e.value]),
+                visible: [...f.querySelectorAll('input,textarea,select')].filter(e => e.name
+                    && !['hidden','submit','button','image','reset'].includes(e.type) && e.getClientRects().length).length
+            }))""")
+        except Error:
+            return
+        for form in forms:
+            if form.get("method") != "POST":
+                continue
+            try:
+                action = self.transport.scope.check(form["action"])
+            except (ValueError, ScopeError):
+                continue
+            hidden = {name: value for name, value in form.get("hidden", []) if name}
+            for name, value in hidden.items():
+                if SECRET_KEY.search(name) and value:
+                    self.redactor.add(value)  # never let a CSRF token surface in reports or prompts
+            self.discovery.record_form(action, "POST", hidden, int(form.get("visible", 0)), self.page.url)
 
     def fields(self):
         # Do not send field values (including hidden CSRF tokens) to the model.

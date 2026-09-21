@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from scanner.__main__ import write_report
 from scanner.config import Config
-from scanner.detectors import Detectors, cpf_matches, valid_cpf
+from scanner.detectors import Detectors, cpf_matches, valid_cpf, is_denied, grant_kind, useful, equivalent
 from scanner.discovery import Discovery
 from scanner.safety import Scope, ScopeError, Redactor, canonical, local_ip
 from scanner.transport import Budget, BudgetExceeded, Response, Transport
@@ -29,6 +29,15 @@ class CPFTests(unittest.TestCase):
     def test_context_required(self):
         self.assertEqual(len(cpf_matches(response('{"cpf":"' + CPF + '"}'))), 1)
         self.assertEqual(cpf_matches(response('{"tracking":"52998224725"}')), [])
+
+    def test_all_cpfs_counted_when_a_column_labels_them(self):
+        # A CSV header labels the whole column: every valid CPF in later rows must count,
+        # even when the "cpf" label is far from them.
+        csv = ("id,nome,cpf,endereco\r\n"
+               "1,Mariana," + CPF + ",Rua das Acacias 120 Vila Aurora Sao Paulo\r\n"
+               "2,Bruno,111.444.777-35,Rua do Ipe 45 Jardim Central Curitiba\r\n")
+        matches = cpf_matches(response(csv, content_type="text/csv"))
+        self.assertEqual(len({m["digits"] for m in matches}), 2)
 
     def test_invalid_masked_examples_and_errors(self):
         for body in ('{"cpf":"***.***.***-25"}', '{"cpf":"11111111111"}', '{"cpf":"1529982247258"}'):
@@ -61,8 +70,24 @@ class MethodTests(unittest.TestCase):
         self.control = response("Unsupported", method="SCANNERPROBE", status=405)
 
     def evaluate(self, baseline, probe, confirmation=None, control=None, reference=None):
-        return self.detector.method(self.endpoint, baseline, probe, confirmation or probe,
-                                    control or self.control, reference)
+        # Mirror the agent's per-method decision: a bypass (baseline denied + probe grants,
+        # reproducibly) or a declared-contract violation (undeclared verb returns GET's data).
+        control = control or self.control
+        confirmation = confirmation or probe
+        if is_denied(baseline):
+            kind = grant_kind(probe, probe.method, control)
+            if not kind:
+                return False
+            if kind == "data" and (grant_kind(confirmation, probe.method, control) != "data"
+                                   or not equivalent(probe, confirmation)):
+                return False
+            return self.detector.record_bypass(self.endpoint, baseline, probe, confirmation, control, probe.method)
+        if (self.endpoint.declared_methods and probe.method not in self.endpoint.declared_methods
+                and useful(baseline) and useful(probe) and equivalent(baseline, probe)
+                and not (control.status == probe.status and equivalent(control, probe))
+                and useful(confirmation) and equivalent(probe, confirmation)):
+            return self.detector.record_contract(self.endpoint, baseline, probe, confirmation, control)
+        return False
 
     def test_status_200_alone_is_not_a_finding(self):
         self.assertFalse(self.evaluate(response(self.data), response(self.data, "POST")))
