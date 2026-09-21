@@ -1,5 +1,7 @@
 # Local Agentic Security Scanner
 
+Autor: **Matheus Bolela**
+
 Agente de segurança para o desafio de AppSec. Recebe uma aplicação local por `BASE_URL`, descobre sua superfície, faz login quando há credenciais, investiga exposição de CPF e HTTP Method Tampering e grava `findings.json`. Usa exclusivamente um modelo local via Ollama; não contém rotas nem credenciais específicas do alvo.
 
 ## Tecnologias
