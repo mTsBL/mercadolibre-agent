@@ -13,37 +13,45 @@ Agente de segurança para o desafio de AppSec. Recebe uma aplicação local por 
 
 Dependências fixadas em [`requirements.txt`](requirements.txt) (`playwright==1.58.0`, `jsonschema==4.26.0`).
 
-## Preparação
+## Início rápido
 
-Requisitos: Linux ou macOS (no Windows, WSL2), Bash e [Ollama](https://docs.ollama.com/download). A preparação precisa de internet; o scan em si roda offline.
+Requisitos: Linux ou macOS (no Windows, use WSL2), Bash e Python 3.10+. Os passos **1 a 3 são preparação** (feitos uma única vez, precisam de internet); o **passo 4 é o scan** (roda offline).
+
+**1. Instale o Ollama** — uma vez, seguindo <https://docs.ollama.com/download>.
+
+**2. Prepare o ambiente** — cria o `.venv`, instala as dependências Python e o Chromium:
 
 ```bash
-./setup.sh              # cria .venv, instala dependências e o Chromium
-ollama pull qwen2.5:7b  # baixa o modelo local
+./setup.sh
 ```
 
-O `run.sh` cuida do Ollama sozinho: reutiliza uma instância disponível ou inicia uma, e encerra apenas a que ele próprio subiu.
-
-## Execução
-
-Com a aplicação alvo no ar:
+**3. Baixe o modelo local:**
 
 ```bash
+ollama pull qwen2.5:7b
+```
+
+**4. Rode o scan** — com a aplicação alvo já no ar:
+
+```bash
+# Sem autenticação:
 BASE_URL=http://localhost:3000 ./run.sh
-```
 
-Quando a aplicação exige login, exporte as duas variáveis (nunca passadas ao modelo, nunca gravadas no relatório):
-
-```bash
+# Com autenticação — exporte as credenciais antes de rodar:
 export BASE_URL=http://localhost:3000
 export CHALLENGE_USERNAME='usuario-do-desafio'
 export CHALLENGE_PASSWORD='senha-do-desafio'
 ./run.sh
 ```
 
-O `findings.json` é escrito **no diretório de onde o comando foi executado** (use `OUTPUT_FILE=/caminho/findings.json` para fixar o destino). Arquivos `.env` não são carregados automaticamente.
+Ao terminar, o terminal informa **quantas vulnerabilidades foram encontradas e o caminho do `findings.json`**.
 
-> **Atenção:** os testes de método são **ativos** — enviam `POST/PUT/PATCH/DELETE` e submetem formulários descobertos, o que pode **alterar o estado** do alvo (ex.: efetivar uma ação via método inesperado). Execute contra a instância local **descartável** do desafio.
+## Detalhes de execução
+
+- O `findings.json` é escrito **no diretório de onde o `run.sh` foi chamado**. Use `OUTPUT_FILE=/caminho/findings.json` para fixar o destino.
+- O `run.sh` cuida do Ollama sozinho (reutiliza uma instância no ar ou inicia uma, e encerra apenas a que ele mesmo subiu). Ele **não instala dependências nem baixa o modelo** — por isso os passos 1 a 3 são obrigatórios antes.
+- As credenciais nunca são enviadas ao modelo nem gravadas no relatório. Arquivos `.env` não são carregados automaticamente.
+- **Atenção:** os testes de método são **ativos** — enviam `POST/PUT/PATCH/DELETE` e submetem formulários descobertos, o que pode **alterar o estado** do alvo (ex.: efetivar uma ação via método inesperado). Execute contra a instância local **descartável** do desafio.
 
 ### Variáveis de ambiente
 
