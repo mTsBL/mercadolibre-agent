@@ -8,7 +8,7 @@ def main():
     root = Path(__file__).resolve().parents[1]
     destination = root / "dist" / "mercadolibre-agent.zip"
     destination.parent.mkdir(exist_ok=True)
-    directories = ("scanner", "schemas", "tests", "demo", "scripts", "docs")
+    directories = ("scanner", "schemas", "tests", "scripts", "docs")
     files = [root / name for name in ("README.md", "requirements.txt", "run.sh", "setup.sh", ".env.example", ".gitignore")]
     for directory in directories:
         files.extend(path for path in (root / directory).rglob("*") if path.is_file()

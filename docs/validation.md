@@ -12,7 +12,7 @@ Resultado da suíte atual: **48 testes passaram**; um teste adicional de inferê
 
 Após integrar o ciclo de vida do Ollama ao `run.sh`, foram acrescentados seis testes de inicialização/reuso/limpeza e reexecutados os sete testes de CLI: **13 passaram**, totalizando 47 casos automatizados. Essa verificação cobre readiness, falha do processo, timeout, interrupção e preservação de uma instância previamente existente.
 
-O comando único também foi validado com o Ollama real inicialmente desligado e `qwen2.5:7b`: iniciou o serviço, realizou uma inferência e um scan de fixture mínima, escreveu relatório `completed` sem findings e encerrou o serviço próprio. Duração: 17,027 s. Não foi necessário iniciar `serve-ollama.sh` separadamente.
+O comando único também foi validado com o Ollama real inicialmente desligado e `qwen2.5:7b`: iniciou o serviço, realizou uma inferência e um scan de fixture mínima, escreveu relatório `completed` sem findings e encerrou o serviço próprio. Duração: 17,027 s. O próprio `run.sh` cuida do ciclo de vida do Ollama.
 
 O formato atual do relatório contém somente `findings`; os metadados do formato anterior foram removidos. Os testes verificam essa estrutura também em falhas e confirmam que a execução não cria arquivos auxiliares de diagnóstico. Quando faltam credenciais, o terminal informa quais variáveis fornecer e a execução termina com código de cobertura parcial. O exemplo abaixo foi adaptado ao formato atual, preservando seus findings.
 
